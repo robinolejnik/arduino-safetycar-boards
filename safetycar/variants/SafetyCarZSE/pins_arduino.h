@@ -91,11 +91,11 @@
 #define NUM_DIGITAL_PINS  31
 #define NUM_ANALOG_INPUTS 12
 
-#define TX_RX_LED_INIT	DDRD |= (1<<5), DDRB |= (1<<0)
-#define TXLED0			PORTD |= (1<<5)
-#define TXLED1			PORTD &= ~(1<<5)
-#define RXLED0			PORTB |= (1<<0)
-#define RXLED1			PORTB &= ~(1<<0)
+#define TX_RX_LED_INIT do {} while (0)
+#define TXLED0         do {} while (0)
+#define TXLED1         do {} while (0)
+#define RXLED0         do {} while (0)
+#define RXLED1         do {} while (0)
 
 #define PIN_WIRE_SDA         (2)
 #define PIN_WIRE_SCL         (3)
