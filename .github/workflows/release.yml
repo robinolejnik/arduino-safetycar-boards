@@ -1,0 +1,97 @@
+name: Arduino Board Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: |
+          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
+      - name: Create board package zip
+        run: |
+          mkdir -p dist
+          zip -r dist/safetycar-${VERSION}.zip safetycar
+
+      - name: Get zip size
+        id: size
+        run: |
+          echo "ZIP_SIZE=$(stat -c%s dist/safetycar-${VERSION}.zip)" >> $GITHUB_ENV
+
+      - name: Calculate ZIP SHA-256 checksum
+        id: checksum
+        run: |
+          CHECKSUM=$(sha256sum dist/safetycar-${VERSION}.zip | awk '{print $1}')
+          echo "CHECKSUM=SHA-256:${CHECKSUM}" >> $GITHUB_ENV
+
+      - name: Generate package index JSON
+        run: |
+          cat > dist/package_safetycar_index.json <<EOF
+          {
+            "packages": [
+              {
+                "name": "safetycar",
+                "maintainer": "",
+                "websiteURL": "https://github.com/${{ github.repository }}",
+                "platforms": [
+                  {
+                    "name": "SafetyCar Boards",
+                    "architecture": "avr",
+                    "version": "${VERSION}",
+                    "category": "Contributed",
+                    "url": "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/safetycar-${VERSION}.zip",
+                    "archiveFileName": "safetycar-${VERSION}.zip",
+                    "size": "${ZIP_SIZE}",
+                    "checksum": "${CHECKSUM}",
+                    "boards": [
+                      {
+                        "name": "SafetyCarZSE",
+                        "build": {
+                          "core": "arduino",
+                          "variant": "SafetyCarZSE",
+                          "mcu": "atmega32u4",
+                          "f_cpu": "16000000L",
+                          "board": "AVR_LEONARDO"
+                        }
+                      }
+                    ],
+                    "toolsDependencies": [
+                      {
+                        "packager": "arduino",
+                        "name": "avr-gcc",
+                        "version": "7.3.0-atmel3.6.1-arduino7"
+                      },
+                      {
+                        "packager": "arduino",
+                        "name": "avrdude",
+                        "version": "6.3.0-arduino17"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+
+      - name: Create GitHub Release and upload artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          name: SafetyCar Boards ${{ env.VERSION }}
+          tag_name: v${{ env.VERSION }}
+          files: |
+            dist/safetycar-${{ env.VERSION }}.zip
+            dist/package_safetycar_index.json
